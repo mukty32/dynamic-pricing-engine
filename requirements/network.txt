@@ -1,0 +1,3 @@
+# Multi-zone convex optimiser (Phase 10). Used offline for now: the API doesn't serve it yet,
+# so it isn't installed in the serving images.
+cvxpy==1.9.3

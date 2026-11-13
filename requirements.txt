@@ -4,6 +4,7 @@
 -r requirements/train.txt
 -r requirements/dashboard.txt
 -r requirements/mlops.txt
+-r requirements/network.txt
 
 # Testing
 pytest==9.2.0

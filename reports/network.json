@@ -1,0 +1,123 @@
+{
+  "demo": {
+    "separate": {
+      "downtown": {
+        "drivers_before": 25.0,
+        "drivers_after": 25.0,
+        "capacity": 50.0,
+        "price": 27.0,
+        "surge": 2.25,
+        "demand": 72.237,
+        "rides": 50.0,
+        "fulfillment": 0.692,
+        "revenue": 1350.0,
+        "value_per_ride": 27.0,
+        "value_per_driver": 54.0
+      },
+      "airport": {
+        "drivers_before": 15.0,
+        "drivers_after": 15.0,
+        "capacity": 30.0,
+        "price": 56.25,
+        "surge": 2.25,
+        "demand": 43.275,
+        "rides": 30.0,
+        "fulfillment": 0.693,
+        "revenue": 1687.5,
+        "value_per_ride": 56.25,
+        "value_per_driver": 112.5
+      },
+      "suburbs": {
+        "drivers_before": 45.0,
+        "drivers_after": 45.0,
+        "capacity": 90.0,
+        "price": 10.076,
+        "surge": 1.008,
+        "demand": 66.394,
+        "rides": 66.394,
+        "fulfillment": 1.0,
+        "revenue": 669.016,
+        "value_per_ride": 0.0,
+        "value_per_driver": 0.0
+      }
+    },
+    "network": {
+      "downtown": {
+        "drivers_before": 25.0,
+        "drivers_after": 36.119,
+        "capacity": 72.237,
+        "price": 27.0,
+        "surge": 2.25,
+        "demand": 72.237,
+        "rides": 72.237,
+        "fulfillment": 1.0,
+        "revenue": 1950.406,
+        "value_per_ride": 24.375,
+        "value_per_driver": 48.75
+      },
+      "airport": {
+        "drivers_before": 15.0,
+        "drivers_after": 20.993,
+        "capacity": 41.985,
+        "price": 56.25,
+        "surge": 2.25,
+        "demand": 43.275,
+        "rides": 41.985,
+        "fulfillment": 0.97,
+        "revenue": 2361.683,
+        "value_per_ride": 56.25,
+        "value_per_driver": 112.5
+      },
+      "suburbs": {
+        "drivers_before": 45.0,
+        "drivers_after": 10.344,
+        "capacity": 20.688,
+        "price": 21.826,
+        "surge": 2.183,
+        "demand": 20.688,
+        "rides": 20.688,
+        "fulfillment": 1.0,
+        "revenue": 451.527,
+        "value_per_ride": 11.75,
+        "value_per_driver": 23.5
+      }
+    },
+    "moves": [
+      {
+        "from": "suburbs",
+        "to": "downtown",
+        "drivers": 16.678,
+        "cost": 150.101
+      },
+      {
+        "from": "suburbs",
+        "to": "airport",
+        "drivers": 17.978,
+        "cost": 251.695
+      }
+    ]
+  },
+  "backtest": {
+    "separate": {
+      "revenue": 3484398.16,
+      "move_cost": 0.0,
+      "profit": 3484398.16,
+      "rides_served": 141511.38,
+      "hours_with_moves": 0.0,
+      "avg_drivers_moved": 0.0
+    },
+    "network": {
+      "revenue": 3569229.87,
+      "move_cost": 38120.53,
+      "profit": 3531109.34,
+      "rides_served": 138469.46,
+      "hours_with_moves": 611.0,
+      "avg_drivers_moved": 2.22
+    }
+  },
+  "profit_uplift": 0.0134,
+  "costs": {
+    "bonus_per_move": 4.0,
+    "cost_per_minute": 0.25
+  }
+}

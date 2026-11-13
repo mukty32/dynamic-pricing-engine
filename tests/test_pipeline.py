@@ -9,15 +9,16 @@ import json
 
 import pricing_engine.backtest as backtest
 import pricing_engine.mlops_pipeline as mlops_pipeline
+import pricing_engine.network as network
 import pricing_engine.online_experiment as online_experiment
 import pricing_engine.train as train
 from pricing_engine import data_generation, tracking
 
 
 def test_full_pipeline_runs_end_to_end(tmp_path, monkeypatch):
-    for module in (train, online_experiment):
+    for module in (train, online_experiment, network):
         monkeypatch.setattr(module, "FIGURES_DIR", tmp_path / "figures")
-    for module in (backtest, online_experiment):
+    for module in (backtest, online_experiment, network):
         monkeypatch.setattr(module, "REPORTS_DIR", tmp_path / "reports")
     monkeypatch.setattr(tracking, "MLOPS_DIR", tmp_path / "mlops")  # `train --track` default location
     monkeypatch.delenv("MLFLOW_TRACKING_URI", raising=False)  # left behind by other tests' configure()
@@ -29,6 +30,8 @@ def test_full_pipeline_runs_end_to_end(tmp_path, monkeypatch):
     train.main(["--data", str(data), "--test-start", test_start, "--model-out", str(model), "--track"])
     backtest.main(["--data", str(data), "--model", str(model), "--test-start", test_start])
     online_experiment.main(["--data", str(data), "--model", str(model), "--test-start", test_start, "--seeds", "1"])
+    network.main(["--data", str(data), "--model", str(model), "--test-start", test_start, "--max-hours", "24"])
+    assert json.loads((tmp_path / "reports" / "network.json").read_text())["backtest"]["network"]["profit"] > 0
     deployed = tmp_path / "deployed" / "demand_model.joblib"
     # --keep-history: the champion registered by `train --track` above must be picked up from the registry.
     mlops_pipeline.main(["--data", str(data), "--model", str(model), "--tracking-dir", str(tmp_path / "mlops"),

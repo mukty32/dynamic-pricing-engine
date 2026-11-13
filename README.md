@@ -34,7 +34,8 @@ Backtest on two held-out months (Nov–Dec, 4,392 zone-hours), scored against th
 - The demand model recovers the market's hidden price sensitivity **exactly** (β̂ = 0.0800 vs true 0.080 downtown), and its forecast error (WAPE 11.0%) matches the best achievable on this data.
 - **Keeps learning after deployment.** When riders suddenly became more price-sensitive, Bayesian online learning cut the lost revenue from **$226k to $43k** (keeping 97% of oracle revenue vs 85% for a frozen model).
 - **Monitors itself.** A drift monitor (PSI, KS test, WAPE/bias and a Bayesian β check) catches a market change, a challenger is retrained and is promoted in the **MLflow model registry** only if it wins on unseen data. In the drift scenario, forecast error dropped from 30.9% to 13.7%, with no false alarm in the stable scenario.
-- **77 automated tests, 97% coverage**, plus lint (ruff), formatting and type checks (mypy) on every push. One optimal-price API call takes about 80 ms on a laptop.
+- **Optimises the whole city at once.** A convex program (cvxpy) prices all zones and relocates drivers jointly. Its shadow prices tell you what one more driver is worth in each zone, and it adds +1.34% profit over the test period (+17.7% in an evening-rush scenario).
+- **90 automated tests, 97% coverage**, plus lint (ruff), formatting and type checks (mypy) on every push. One optimal-price API call takes about 80 ms on a laptop.
 
 ## Architecture
 
@@ -177,6 +178,30 @@ Simulated Jan–Feb 2026, monitored against the champion trained on 2025:
 
 Browse every run, metric and model version: `mlflow ui --backend-store-uri sqlite:///mlops/mlflow.db`
 
+### 6. Multi-zone pricing with driver repositioning (convex optimisation)
+Zones were priced independently so far. But drivers can **move**: paying a few idle suburban drivers to relocate downtown can earn more than it costs. `pricing_engine/network.py` chooses **every zone's price and the driver moves jointly**, as one convex problem solved with **cvxpy**.
+
+**The key change of variables:** revenue isn't concave in *price*, but it is concave in *quantity*. Selling $x$ rides means charging $p(x) = \ln(C/x)/\beta$, so
+
+$$
+R(x) = \frac{x \ln(C/x)}{\beta} = \frac{x\ln C + \operatorname{entr}(x)}{\beta}, \qquad R''(x) = -\frac{1}{\beta x} < 0
+$$
+
+A surge cap adds $R(x) \le p_{\max}x$, and the minimum of concave functions is concave. With $f_{ij}$ = drivers moved from zone $i$ to $j$ and travel time $t_{ij}$:
+
+$$
+\max_{x,\,f \ge 0}\ \sum_i R_i(x_i) - \sum_{ij} c_{ij} f_{ij}
+\quad\text{s.t.}\quad x_i \le r\Big(K_i - \sum_j f_{ij}\Big) + \sum_j r\Big(1 - \tfrac{t_{ji}}{60}\Big) f_{ji},\quad \sum_j f_{ij} \le K_i
+$$
+
+**Duality: shadow prices.** The dual value $\lambda_i$ of zone $i$'s capacity constraint is what one more ride of capacity is worth there: $\lambda_i = p_i - 1/\beta_i$ (marginal revenue), or $p_{\max}$ when the cap binds, and 0 when drivers are idle. KKT then says a route $i \to j$ is used only when it exactly breaks even, $r(1 - t_{ij}/60)\lambda_j - r\lambda_i = c_{ij}$, and no unused route would make money. Tests verify both conditions.
+
+![Driver repositioning](reports/figures/network_repositioning.png)
+
+**Friday 6 pm** (downtown 25 drivers, airport 15, suburbs 45): moving 17 suburban drivers downtown and 18 to the airport raises hourly profit from **$3,707 to $4,362 (+17.7%)**, with downtown fulfillment going from 69% to 100%. The suburbs' idle drivers were worth **$0** at the margin; afterwards every used route breaks even exactly.
+
+**Backtest (1,464 hours, true market):** the separate-zone solution reproduces the Phase 3 optimiser ($3,484,398 vs $3,484,388, a cross-check between two independent solvers). Joint optimisation moves drivers in 611 of 1,464 hours and lifts **profit by +1.34%** after paying $38k in repositioning costs. Most hours have no imbalance worth fixing, and the gain comes from the rush hours that do.
+
 ## Quickstart
 
 ### Option A: Docker (one command)
@@ -210,9 +235,10 @@ python -m pricing_engine.backtest          # 3. measure revenue uplift -> report
 python -m pricing_engine.online_experiment # 4. online-learning experiments -> reports/online_learning.json
 python -m pricing_engine.mlops_pipeline    #    MLOps loop: monitor -> retrain -> promote (MLflow, in mlops/)
 python -m pricing_engine.train --track     #    (optional) log a training run + register it in MLflow
+python -m pricing_engine.network           #    multi-zone pricing + driver repositioning (cvxpy)
 uvicorn pricing_engine.api.main:app --reload   # 5. API        -> http://127.0.0.1:8000/docs
 streamlit run dashboard/app.py                 # 6. dashboard  -> http://localhost:8501 (2nd terminal)
-pytest --cov                                   # 77 tests + coverage report
+pytest --cov                                   # 90 tests + coverage report
 ruff check . && ruff format --check . && mypy  # code-quality checks (the same ones CI runs)
 ```
 
@@ -263,9 +289,10 @@ curl -X POST http://localhost:8000/v1/price -H "Content-Type: application/json" 
 │   ├── monitoring.py        # drift detection: PSI, KS, performance, Bayesian beta check
 │   ├── tracking.py          # MLflow experiment tracking + model registry (champion alias)
 │   ├── mlops_pipeline.py    # monitor -> retrain -> compare -> promote
+│   ├── network.py           # multi-zone convex optimiser: prices + driver moves, shadow prices
 │   └── api/                 # FastAPI app + Pydantic schemas
 ├── dashboard/               # Streamlit app; talks to the API over HTTP only
-├── tests/                   # 77 tests: math, model, optimiser, online learning, MLOps, API, UI, full pipeline
+├── tests/                   # 90 tests: math, model, optimisers, online learning, MLOps, API, UI, full pipeline
 ├── docker/                  # api, dashboard and single-container demo Dockerfiles
 ├── deploy/run_demo.py       # runs API + dashboard in one container for free hosting
 ├── render.yaml              # one-click Render deployment
@@ -291,6 +318,7 @@ curl -X POST http://localhost:8000/v1/price -H "Content-Type: application/json" 
 - **Synthetic data.** The simulator makes exact counterfactual evaluation possible. With real data, validation would require A/B tests.
 - **Static competitor.** The competitor's prices are replayed and don't react to ours. A game-theoretic or bandit-based extension would model that.
 - **Deterministic capacity.** The optimiser uses $\min(D, K)$. A stochastic version would maximise $p \cdot \mathbb{E}[\min(N, K)] = p\sum_{k=0}^{K-1} P(N > k)$ for Poisson $N$.
+- **Network optimiser simplifications.** Driver moves are continuous (a real dispatcher would round to whole drivers), moved drivers always comply, and moves last one hour. It also maximises profit only: pulling drivers out of the suburbs roughly doubles suburban prices in the demo, so a production version would add service-level constraints (e.g. a minimum fulfillment rate per zone).
 - **MLOps loop runs on demand.** In production it would be scheduled (e.g. a weekly GitHub Actions or Airflow job) against a shared MLflow server, and a promotion would trigger a redeploy.
 - **Online learning is offline-simulated.** The learner runs in a replay experiment. Wiring it into the API would need persistent state (e.g. Redis) and a feedback endpoint for observed requests.
 - **Production hardening.** Next steps would be authentication and rate limiting, model monitoring and drift alerts, and a streaming feature pipeline for real-time supply data.
