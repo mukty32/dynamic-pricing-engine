@@ -20,6 +20,9 @@ data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 
+# --- MLflow tracking database + artifacts (local experiment history) ---
+mlops/
+
 # --- Trained models: rebuilt by `python -m pricing_engine.train` (metrics.json IS committed) ---
 models/*.joblib
 

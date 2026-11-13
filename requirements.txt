@@ -3,6 +3,7 @@
 # Each Docker image installs only its own file from requirements/.
 -r requirements/train.txt
 -r requirements/dashboard.txt
+-r requirements/mlops.txt
 
 # Testing
 pytest==9.2.0

@@ -2,7 +2,8 @@
 
 [![CI](https://github.com/mukty32/dynamic-pricing-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/mukty32/dynamic-pricing-engine/actions/workflows/ci.yml)
 [![Live demo](https://img.shields.io/badge/live%20demo-Render-46e3b7)](https://dynamic-pricing-engine-nz8n.onrender.com)
-![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-97%25-brightgreen)
+![MLflow](https://img.shields.io/badge/MLOps-MLflow-0194e2)
 ![Ruff](https://img.shields.io/badge/lint-ruff-261230)
 ![Python](https://img.shields.io/badge/python-3.14-blue)
 ![FastAPI](https://img.shields.io/badge/API-FastAPI-009688)
@@ -32,7 +33,8 @@ Backtest on two held-out months (Nov–Dec, 4,392 zone-hours), scored against th
 - Revenue **and** service quality improve together. Pricing at the market-clearing level means fewer riders request and then find no car available.
 - The demand model recovers the market's hidden price sensitivity **exactly** (β̂ = 0.0800 vs true 0.080 downtown), and its forecast error (WAPE 11.0%) matches the best achievable on this data.
 - **Keeps learning after deployment.** When riders suddenly became more price-sensitive, Bayesian online learning cut the lost revenue from **$226k to $43k** (keeping 97% of oracle revenue vs 85% for a frozen model).
-- **67 automated tests, 98% coverage**, plus lint (ruff), formatting and type checks (mypy) on every push. One optimal-price API call takes about 80 ms on a laptop.
+- **Monitors itself.** A drift monitor (PSI, KS test, WAPE/bias and a Bayesian β check) catches a market change, a challenger is retrained and is promoted in the **MLflow model registry** only if it wins on unseen data. In the drift scenario, forecast error dropped from 30.9% to 13.7%, with no false alarm in the stable scenario.
+- **77 automated tests, 97% coverage**, plus lint (ruff), formatting and type checks (mypy) on every push. One optimal-price API call takes about 80 ms on a laptop.
 
 ## Architecture
 
@@ -141,6 +143,40 @@ $$
 
 In the real market (experiment 1), natural variation in supply and time of day gives greedy "free" exploration, so it matches Thompson Sampling. Thompson Sampling is the strategy that stays safe when that variation disappears.
 
+### 5. MLOps: monitoring, retraining and the model registry
+`python -m pricing_engine.mlops_pipeline` runs the loop a scheduled job would run in production. Every run, metric, drift report and model version is tracked in **MLflow**.
+
+```mermaid
+flowchart LR
+    NEW[("New weeks of data")] --> MON{"Monitor the champion"}
+    MON -- "ok / warning" --> KEEP["Keep the champion"]
+    MON -- "alert" --> RT["Retrain a challenger<br/>(recency-weighted)"]
+    RT --> CMP{"Better on unseen<br/>holdout by ≥ 2%?"}
+    CMP -- "yes" --> PRO["Promote: move the<br/>@champion alias"]
+    CMP -- "no" --> KEEP
+```
+
+Three kinds of drift, from "something changed" to "the model is wrong":
+
+| check | method | severity |
+|---|---|---|
+| **Data drift** (inputs changed) | Population Stability Index $\text{PSI} = \sum_i (c_i - r_i)\ln\frac{c_i}{r_i}$ over reference deciles, plus a KS test | warning |
+| **Performance drift** | WAPE vs the model's reference WAPE (> 1.2×), bias = actual / predicted (off by > 5%) | alert |
+| **Concept drift** (β changed) | fit $y \sim \text{Poisson}(\hat y\, e^{a - b(p - p_0)})$ with the Phase 7 Bayesian learner; alert if the 95% interval for $b$ excludes 0 | alert |
+
+Data drift alone is only a warning: the model already uses competitor price and rain as inputs, so changes there may be handled correctly. Retraining weights each row by $0.5^{\,\text{age}/14\text{ days}}$ (recent weeks count most), and the challenger must beat the champion on the newest 14 days, which neither model has seen.
+
+Simulated Jan–Feb 2026, monitored against the champion trained on 2025:
+
+| | stable market | drifted market (β × 1.5, competitor −15%, more rain) |
+|---|---|---|
+| data drift | all PSI < 0.02 | competitor price 0.21, demand 0.13, rain 0.11 (warnings) |
+| forecast error (WAPE) | 11.4% (reference 11.0%) | **30.3%** → alert |
+| estimated β (downtown, truth 0.080 / 0.120) | 0.081 | **0.119** → alert |
+| decision | keep v1, no retraining | retrain → holdout WAPE 30.9% → **13.7%** → **promote v2** |
+
+Browse every run, metric and model version: `mlflow ui --backend-store-uri sqlite:///mlops/mlflow.db`
+
 ## Quickstart
 
 ### Option A: Docker (one command)
@@ -172,9 +208,11 @@ python -m pricing_engine.data_generation   # 1. simulate the market    -> data/r
 python -m pricing_engine.train             # 2. train & compare models -> models/
 python -m pricing_engine.backtest          # 3. measure revenue uplift -> reports/backtest.json
 python -m pricing_engine.online_experiment # 4. online-learning experiments -> reports/online_learning.json
+python -m pricing_engine.mlops_pipeline    #    MLOps loop: monitor -> retrain -> promote (MLflow, in mlops/)
+python -m pricing_engine.train --track     #    (optional) log a training run + register it in MLflow
 uvicorn pricing_engine.api.main:app --reload   # 5. API        -> http://127.0.0.1:8000/docs
 streamlit run dashboard/app.py                 # 6. dashboard  -> http://localhost:8501 (2nd terminal)
-pytest --cov                                   # 67 tests + coverage report
+pytest --cov                                   # 77 tests + coverage report
 ruff check . && ruff format --check . && mypy  # code-quality checks (the same ones CI runs)
 ```
 
@@ -222,9 +260,12 @@ curl -X POST http://localhost:8000/v1/price -H "Content-Type: application/json" 
 │   ├── backtest.py          # policy evaluation against the true market
 │   ├── online_learning.py   # Bayesian (Laplace) learner + Thompson Sampling pricing
 │   ├── online_experiment.py # market-shift and exploration experiments
+│   ├── monitoring.py        # drift detection: PSI, KS, performance, Bayesian beta check
+│   ├── tracking.py          # MLflow experiment tracking + model registry (champion alias)
+│   ├── mlops_pipeline.py    # monitor -> retrain -> compare -> promote
 │   └── api/                 # FastAPI app + Pydantic schemas
 ├── dashboard/               # Streamlit app; talks to the API over HTTP only
-├── tests/                   # 67 tests: math, model, optimiser, online learning, API, UI, full pipeline
+├── tests/                   # 77 tests: math, model, optimiser, online learning, MLOps, API, UI, full pipeline
 ├── docker/                  # api, dashboard and single-container demo Dockerfiles
 ├── deploy/run_demo.py       # runs API + dashboard in one container for free hosting
 ├── render.yaml              # one-click Render deployment
@@ -241,6 +282,7 @@ curl -X POST http://localhost:8000/v1/price -H "Content-Type: application/json" 
 - **Testing against known answers.** Optimiser and API tests use a fake model with a closed-form solution, so they verify the math, not just "it runs".
 - **Separation of services.** The dashboard has no ML dependencies; the API is the contract.
 - **Reproducibility.** Seeded simulation, pinned dependencies, and models trained inside the Docker build.
+- **MLflow stays out of production.** Tracking and the registry are development/training tools (`requirements/mlops.txt`). The serving images don't install MLflow; the deployment artifact is the exported champion (`--deploy-to`).
 - **Quality gates.** CI runs ruff (lint and format), mypy (types) and the test suite with a 90% coverage floor, and a pre-commit hook catches style problems before each commit.
 - **Secure defaults.** Non-root containers, strict request schemas (`extra="forbid"`), request size limits, and models loaded only from trusted local files.
 
@@ -249,6 +291,7 @@ curl -X POST http://localhost:8000/v1/price -H "Content-Type: application/json" 
 - **Synthetic data.** The simulator makes exact counterfactual evaluation possible. With real data, validation would require A/B tests.
 - **Static competitor.** The competitor's prices are replayed and don't react to ours. A game-theoretic or bandit-based extension would model that.
 - **Deterministic capacity.** The optimiser uses $\min(D, K)$. A stochastic version would maximise $p \cdot \mathbb{E}[\min(N, K)] = p\sum_{k=0}^{K-1} P(N > k)$ for Poisson $N$.
+- **MLOps loop runs on demand.** In production it would be scheduled (e.g. a weekly GitHub Actions or Airflow job) against a shared MLflow server, and a promotion would trigger a redeploy.
 - **Online learning is offline-simulated.** The learner runs in a replay experiment. Wiring it into the API would need persistent state (e.g. Redis) and a feedback endpoint for observed requests.
 - **Production hardening.** Next steps would be authentication and rate limiting, model monitoring and drift alerts, and a streaming feature pipeline for real-time supply data.
 

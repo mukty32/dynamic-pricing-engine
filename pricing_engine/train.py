@@ -233,7 +233,35 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--data", type=Path, default=DEFAULT_DATASET_PATH)
     parser.add_argument("--test-start", default=DEFAULT_TEST_START, help="first timestamp of the test period")
     parser.add_argument("--model-out", type=Path, default=DEFAULT_MODEL_PATH)
+    parser.add_argument("--track", action="store_true", help="log this run to MLflow and register the champion")
     return parser.parse_args(argv)
+
+
+def track_training_run(result: dict, args: argparse.Namespace, artifacts: list[Path]) -> int | None:
+    """Log every model's scores to MLflow and register the champion as a new version."""
+    # Imported here so training (e.g. inside the Docker build) doesn't need MLflow installed.
+    from pricing_engine import tracking
+
+    tracking.configure()
+    champion = result["champion"]
+    metrics: dict[str, float] = {}
+    for name, scores in result["metrics"].items():
+        metrics.update(tracking.flatten_metrics(name, scores))
+    for column in ("poisson_glm", "xgboost"):
+        metrics.update(tracking.flatten_metrics(f"beta.{column}", result["betas"][column].to_dict()))
+    run = tracking.log_run(
+        f"train: {champion}",
+        params={"test_start": args.test_start, "train_rows": len(result["train"]), "test_rows": len(result["test"]),
+                "champion": champion},
+        metrics=metrics,
+        tags={"stage": "training"},
+        artifacts=artifacts,
+        model=result["models"][champion],
+        register=True,
+        model_tags={"reference_wape": str(result["metrics"][champion]["WAPE"]), "origin": "train.py"},
+    )  # fmt: skip
+    tracking.promote(run["version"])
+    return run["version"]
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -272,6 +300,9 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     print(f"\n4) Champion: {champion}")
+    if args.track:
+        version = track_training_run(result, args, [figure, metrics_path])
+        print(f"5) Logged to MLflow; registered and promoted as demand-model v{version}")
     logger.info("Saved model   -> %s", model_path)
     logger.info("Saved metrics -> %s", metrics_path)
     logger.info("Saved figure  -> %s", figure)

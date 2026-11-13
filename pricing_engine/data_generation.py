@@ -213,7 +213,7 @@ def generate_dataset(config: SimulationConfig | None = None) -> pd.DataFrame:
         1 + config.competitor_surge_sensitivity * (pressure - 1), 1.0, config.competitor_max_surge
     )
     competitor_noise = rng.lognormal(mean=0.0, sigma=config.competitor_price_noise, size=n_rows)
-    competitor_price = np.round(base_fare * competitor_surge * competitor_noise, 2)
+    competitor_price = np.round(base_fare * competitor_surge * competitor_noise * config.competitor_price_level, 2)
 
     # --- Final demand: riders react to our price and the competitor's price ---
     expected_demand = market_demand * price_response(

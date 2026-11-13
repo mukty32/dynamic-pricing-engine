@@ -1,0 +1,3 @@
+# Experiment tracking + model registry (development / training only).
+# NOT installed in the API or dashboard images: production serving doesn't need MLflow.
+mlflow==3.18.0

@@ -20,6 +20,7 @@ MODELS_DIR = PROJECT_ROOT / "models"
 DEFAULT_MODEL_PATH = MODELS_DIR / "demand_model.joblib"
 REPORTS_DIR = PROJECT_ROOT / "reports"
 FIGURES_DIR = REPORTS_DIR / "figures"
+MLOPS_DIR = PROJECT_ROOT / "mlops"  # MLflow tracking database + artifacts (local, not committed)
 
 
 @dataclass(frozen=True)
@@ -65,6 +66,7 @@ class SimulationConfig:
     competitor_surge_sensitivity: float = 0.4
     competitor_max_surge: float = 2.2
     competitor_price_noise: float = 0.08  # sigma of the log-normal noise
+    competitor_price_level: float = 1.0  # < 1 means the competitor got cheaper (used for drift scenarios)
 
     zones: tuple[ZoneConfig, ...] = (
         ZoneConfig("downtown", base_demand=120, base_supply=45, base_fare=12.0, price_sensitivity=0.080),
