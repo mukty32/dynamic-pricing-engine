@@ -1,6 +1,7 @@
 # Real-Time Dynamic Pricing & Demand Forecasting Engine
 
-![CI](https://github.com/<your-username>/dynamic-pricing-engine/actions/workflows/ci.yml/badge.svg)
+[![CI](https://github.com/mukty32/dynamic-pricing-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/mukty32/dynamic-pricing-engine/actions/workflows/ci.yml)
+[![Live demo](https://img.shields.io/badge/live%20demo-Render-46e3b7)](https://dynamic-pricing-engine-nz8n.onrender.com)
 ![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)
 ![Ruff](https://img.shields.io/badge/lint-ruff-261230)
 ![Python](https://img.shields.io/badge/python-3.14-blue)
@@ -13,7 +14,7 @@ constrained optimisation problem** to pick the revenue-maximising price for ever
 and hour. It's served through a validated **REST API** and an **interactive dashboard**,
 all containerised with Docker.
 
-**▶ Live demo:** `<add your Render URL here>` (free hosting: the first visit after a while may take about a minute to wake up)
+**▶ Live demo: [dynamic-pricing-engine-nz8n.onrender.com](https://dynamic-pricing-engine-nz8n.onrender.com)** (free hosting: the first visit after a while may take about a minute to wake up)
 
 <!-- Add a dashboard screenshot: save it as docs/dashboard.png and uncomment the next line. -->
 <!-- ![Dashboard](docs/dashboard.png) -->
