@@ -1,0 +1,7 @@
+# Store and check out text files with Linux (LF) line endings on every OS.
+# Docker images and CI run on Linux, and a Windows CRLF ending can break scripts there.
+* text=auto eol=lf
+
+# Binary files: never touch their bytes.
+*.png binary
+*.joblib binary

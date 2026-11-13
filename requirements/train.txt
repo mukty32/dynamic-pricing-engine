@@ -1,0 +1,3 @@
+# Everything needed to generate data and train the model (API deps + plotting).
+-r api.txt
+matplotlib==3.11.2

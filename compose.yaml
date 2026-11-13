@@ -1,0 +1,29 @@
+# Start the whole system with one command:
+#     docker compose up --build
+# API:       http://localhost:8000/docs
+# Dashboard: http://localhost:8501
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    image: dynamic-pricing-api:1.0.0
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/dashboard.Dockerfile
+    image: dynamic-pricing-dashboard:1.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      # Inside Docker's network, containers find each other by SERVICE NAME, not localhost.
+      PRICING_API_URL: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy  # wait until the API's health check passes
+    restart: unless-stopped

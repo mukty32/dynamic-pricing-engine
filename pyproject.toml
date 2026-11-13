@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dynamic-pricing-engine"
+version = "1.0.0"
+description = "Real-time demand forecasting and revenue-maximising price optimisation for a ride-hailing market."
+readme = "README.md"
+requires-python = ">=3.14"
+license = "MIT"
+# Exact dependency pins live in requirements/*.txt (one file per Docker image).
+
+[tool.setuptools.packages.find]
+include = ["pricing_engine*", "dashboard*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+# ---------------------------------------------------------------- code quality
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+
+[tool.ruff.lint]
+select = [
+    "E", "W",  # pycodestyle: basic style errors
+    "F",       # pyflakes: unused imports/variables, undefined names (real bugs)
+    "I",       # isort: tidy, sorted imports
+    "B",       # bugbear: common bug patterns
+    "UP",      # pyupgrade: modern Python syntax
+    "SIM",     # simplify: needlessly complex code
+    "NPY",     # NumPy-specific mistakes
+    "PD",      # pandas-specific mistakes
+]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's `Depends(...)` in a default argument is the framework's intended pattern, not a bug.
+extend-immutable-calls = ["fastapi.Depends"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pricing_engine", "dashboard"]
+known-third-party = ["fakes"]
+
+[tool.mypy]
+python_version = "3.14"
+files = ["pricing_engine", "dashboard", "deploy"]
+ignore_missing_imports = true   # many scientific libraries ship without type hints
+warn_unused_ignores = true
+warn_redundant_casts = true
+check_untyped_defs = true
+
+[tool.coverage.run]
+source = ["pricing_engine", "dashboard"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

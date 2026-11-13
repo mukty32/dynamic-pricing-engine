@@ -1,0 +1,22 @@
+# Keep the Docker build context small and free of local junk.
+# The images rebuild data and models themselves, so local copies aren't needed.
+.venv/
+venv/
+.git/
+.github/
+.claude/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+.env
+data/
+models/
+reports/
+notebooks/
+tests/
+*.md

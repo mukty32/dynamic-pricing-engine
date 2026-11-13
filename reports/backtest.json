@@ -1,0 +1,33 @@
+{
+  "test_start": "2025-11-01",
+  "policies": {
+    "static base fare": {
+      "avg_price": 15.6667,
+      "total_revenue": 2143781.6543,
+      "rides_served": 144133.5556,
+      "fulfillment_rate": 0.418,
+      "uplift_vs_historical": -0.2571
+    },
+    "historical surge rule": {
+      "avg_price": 21.4327,
+      "total_revenue": 2885832.9199,
+      "rides_served": 143897.0605,
+      "fulfillment_rate": 0.7138,
+      "uplift_vs_historical": 0.0
+    },
+    "optimizer + GLM model": {
+      "avg_price": 26.1885,
+      "total_revenue": 3484388.1833,
+      "rides_served": 141483.471,
+      "fulfillment_rate": 0.9493,
+      "uplift_vs_historical": 0.2074
+    },
+    "optimizer + true demand (oracle)": {
+      "avg_price": 26.1521,
+      "total_revenue": 3489774.4698,
+      "rides_served": 142041.7395,
+      "fulfillment_rate": 0.9501,
+      "uplift_vs_historical": 0.2093
+    }
+  }
+}

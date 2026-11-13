@@ -1,0 +1,57 @@
+{
+  "scenario": {
+    "zone": "downtown",
+    "new_beta": 0.12,
+    "shift_day": 15,
+    "seeds": 10
+  },
+  "model_beta": 0.08,
+  "results": {
+    "static model": {
+      "revenue": 1239620.9087,
+      "pct_of_oracle": 0.8458,
+      "regret_before_shift": 878.955,
+      "regret_after_shift": 225135.7732,
+      "regret_last_week": 38556.8638,
+      "final_beta_belief": 0.08
+    },
+    "greedy Bayesian": {
+      "revenue": 1425629.1888,
+      "pct_of_oracle": 0.9727,
+      "regret_before_shift": 1857.6718,
+      "regret_after_shift": 38148.7763,
+      "regret_last_week": 866.3279,
+      "final_beta_belief": 0.1192
+    },
+    "Thompson sampling": {
+      "revenue": 1422948.6761,
+      "pct_of_oracle": 0.9709,
+      "regret_before_shift": 2900.0292,
+      "regret_after_shift": 39786.9316,
+      "regret_last_week": 1196.0861,
+      "final_beta_belief": 0.12
+    },
+    "oracle (knows the truth)": {
+      "revenue": 1465635.6369,
+      "pct_of_oracle": 1.0,
+      "regret_before_shift": 0.0,
+      "regret_after_shift": 0.0,
+      "regret_last_week": 0.0,
+      "final_beta_belief": 0.12
+    }
+  },
+  "fixed_context": {
+    "greedy Bayesian": {
+      "final_beta_belief": 0.0809,
+      "final_price": 12.3629,
+      "true_optimal_price": 9.6,
+      "total_regret": 145374.8552
+    },
+    "Thompson sampling": {
+      "final_beta_belief": 0.1168,
+      "final_price": 9.6,
+      "true_optimal_price": 9.6,
+      "total_regret": 3134.7397
+    }
+  }
+}

@@ -1,0 +1,13 @@
+# Full development environment: every service + testing and code-quality tools.
+#   pip install -r requirements.txt
+# Each Docker image installs only its own file from requirements/.
+-r requirements/train.txt
+-r requirements/dashboard.txt
+
+# Testing
+pytest==9.2.0
+pytest-cov==7.1.0
+
+# Code quality
+ruff==0.17.5
+mypy==2.4.1

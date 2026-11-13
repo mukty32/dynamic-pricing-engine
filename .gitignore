@@ -1,0 +1,29 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Virtual environment (each developer creates their own) ---
+.venv/
+venv/
+
+# --- Secrets ---
+.env
+
+# --- Data: generated files are reproducible from the seed, so we don't commit them ---
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# --- Trained models: rebuilt by `python -m pricing_engine.train` (metrics.json IS committed) ---
+models/*.joblib
+
+# --- Notebooks / editors ---
+.ipynb_checkpoints/
+.vscode/
+.idea/

@@ -1,0 +1,11 @@
+# Render "Blueprint": Render reads this file and creates the web service for you.
+# Render dashboard -> New -> Blueprint -> pick this GitHub repository.
+services:
+  - type: web
+    name: dynamic-pricing-engine
+    runtime: docker
+    dockerfilePath: ./docker/demo.Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /_stcore/health
+    autoDeploy: true  # every push to GitHub redeploys automatically

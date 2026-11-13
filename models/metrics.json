@@ -1,0 +1,47 @@
+{
+  "champion": "poisson_glm",
+  "test_start": "2025-11-01",
+  "test_metrics": {
+    "baseline": {
+      "MAE": 8.3226,
+      "RMSE": 12.2424,
+      "WAPE": 0.1809,
+      "poisson_deviance": 2.6478
+    },
+    "poisson_glm": {
+      "MAE": 5.0647,
+      "RMSE": 6.7792,
+      "WAPE": 0.1101,
+      "poisson_deviance": 1.0016
+    },
+    "xgboost": {
+      "MAE": 6.1138,
+      "RMSE": 8.5306,
+      "WAPE": 0.1329,
+      "poisson_deviance": 1.4017
+    },
+    "true_formula (ceiling)": {
+      "MAE": 5.0451,
+      "RMSE": 6.7562,
+      "WAPE": 0.1097,
+      "poisson_deviance": 0.9971
+    }
+  },
+  "estimated_beta": {
+    "true_beta": {
+      "airport": 0.035,
+      "downtown": 0.08,
+      "suburbs": 0.1
+    },
+    "poisson_glm": {
+      "airport": 0.035,
+      "downtown": 0.08,
+      "suburbs": 0.0992
+    },
+    "xgboost": {
+      "airport": 0.0218,
+      "downtown": 0.0572,
+      "suburbs": 0.0783
+    }
+  }
+}
